@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  prix-api:
+    build: .
+    ports:
+      - "8001:8001"
+    environment:
+      - MONGO_URI=mongodb://mongo:27018
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:5
+    restart: always
+    ports:
+      - "27018:27017"
