@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  agent-intelligent:
+    build: .
+    container_name: agent-intelligent
+    restart: unless-stopped
+    environment:
+      - API_KEY=bu_58Y8QhRvrrKBFz4NNinNn1pAhYexch3Vb_YhlbziboQ
+    depends_on:
+      - prix-api
+    networks:
+      - micro-net
+
+  prix-api:
+    image: prix-service:latest
+    container_name: prix-api
+    ports:
+      - "8001:8001"
+    networks:
+      - micro-net
+
+networks:
+  micro-net:
+    driver: bridge
