@@ -1,0 +1,27 @@
+# .github/workflows/deploy.yml
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run tests
+        run: |
+          docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit
+          docker-compose -f docker-compose.test.yml down
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v2
+      - name: Deploy to production
+        run: |
+          # Scripts de déploiement
+          ./scripts/deploy.sh
