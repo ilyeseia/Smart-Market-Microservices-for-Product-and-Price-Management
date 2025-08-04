@@ -1,0 +1,141 @@
+# دليل التطوير
+
+## نظرة عامة على الهيكل المحسن
+
+### 1. الهيكل الجديد
+```
+developper/
+├── agent-intelligent/          # خدمة الوكيل الذكي
+├── prix-service/              # خدمة الأسعار  
+├── produits-service/          # خدمة المنتجات
+├── shared/                    # الملفات المشتركة
+│   ├── common/               # الأدوات المشتركة
+│   │   └── utils.py          # أدوات مساعدة
+│   └── config/               # إعدادات مشتركة
+│       └── settings.py       # إعدادات المشروع
+├── docs/                     # الوثائق
+├── tests/                    # اختبارات على مستوى المشروع
+│   └── integration/          # اختبارات التكامل
+├── scripts/                  # سكريبتات الإدارة
+│   ├── start_services.sh     # تشغيل الخدمات
+│   └── stop_services.sh      # إيقاف الخدمات
+├── deployment/               # ملفات النشر
+├── docker-compose.yml        # تكوين Docker Compose الرئيسي
+└── README.md                 # الوثائق الرئيسية
+```
+
+### 2. التحسينات المضافة
+
+#### أ) الملفات المشتركة (`shared/`)
+- **`common/utils.py`**: أدوات مشتركة بين الخدمات
+  - `ServiceClient`: عميل موحد للتواصل بين الخدمات
+  - `retry`: ديكوريتر لإعادة المحاولة
+  - `ResponseFormatter`: تنسيق الردود الموحد
+  - `validate_required_fields`: التحقق من البيانات
+
+- **`config/settings.py`**: إعدادات مشتركة
+  - إعدادات قواعد البيانات
+  - إعدادات الخدمات
+  - إعدادات Redis
+  - إعدادات التسجيل
+
+#### ب) السكريبتات (`scripts/`)
+- **`start_services.sh`**: تشغيل جميع الخدمات بسهولة
+- **`stop_services.sh`**: إيقاف الخدمات وتنظيف الموارد
+
+#### ج) اختبارات التكامل (`tests/integration/`)
+- **`test_services_integration.py`**: اختبارات شاملة للتكامل بين الخدمات
+
+#### د) تكوين Docker محسن
+- **`docker-compose.yml`**: تكوين شامل يتضمن:
+  - جميع الخدمات
+  - قواعد البيانات منفصلة لكل خدمة
+  - Redis للتخزين المؤقت
+  - شبكة موحدة للتواصل
+
+### 3. كيفية الاستخدام
+
+#### تشغيل المشروع
+```bash
+# تشغيل جميع الخدمات
+./scripts/start_services.sh
+
+# أو يدوياً
+docker-compose up --build -d
+```
+
+#### إيقاف المشروع
+```bash
+# إيقاف الخدمات
+./scripts/stop_services.sh
+
+# أو يدوياً
+docker-compose down
+```
+
+#### تشغيل الاختبارات
+```bash
+# اختبارات التكامل
+python -m pytest tests/integration/
+
+# اختبارات خدمة معينة
+python -m pytest agent-intelligent/tests/
+```
+
+### 4. أفضل الممارسات
+
+#### أ) التواصل بين الخدمات
+```python
+from shared.common.utils import ServiceClient
+
+# إنشاء عميل للتواصل مع خدمة المنتجات
+client = ServiceClient("http://produits-service:8000")
+
+# طلب المنتجات
+products = client.get("/products")
+```
+
+#### ب) استخدام الإعدادات المشتركة
+```python
+from shared.config.settings import get_service_url, get_database_url
+
+# الحصول على رابط الخدمة
+prix_url = get_service_url("prix_service")
+
+# الحصول على رابط قاعدة البيانات
+db_url = get_database_url("prix")
+```
+
+#### ج) تنسيق الردود
+```python
+from shared.common.utils import ResponseFormatter
+
+# رد ناجح
+return ResponseFormatter.success(data, "تم الحصول على البيانات بنجاح")
+
+# رد خطأ
+return ResponseFormatter.error("خطأ في المعالجة", 400)
+```
+
+### 5. التطوير المستقبلي
+
+#### المقترحات للتحسين:
+1. **إضافة مراقبة**: Prometheus + Grafana
+2. **إدارة الأسرار**: Vault أو Kubernetes Secrets
+3. **CI/CD**: GitHub Actions أو GitLab CI
+4. **API Gateway**: Kong أو Nginx
+5. **التوثيق التلقائي**: Swagger/OpenAPI
+
+#### الخطوات التالية:
+1. تحديث كل خدمة لتستخدم الملفات المشتركة
+2. إضافة اختبارات أكثر شمولية
+3. تحسين إدارة الأخطاء
+4. إضافة مراقبة الأداء
+5. توثيق API كل خدمة
+
+هذا الهيكل المحسن يوفر:
+- **قابلية الصيانة**: كود منظم ومشترك
+- **سهولة التطوير**: أدوات وسكريبتات مساعدة
+- **قابلية التوسع**: هيكل يدعم إضافة خدمات جديدة
+- **الجودة**: اختبارات شاملة
+- **الموثوقية**: إدارة أفضل للأخطاء والتكوين
