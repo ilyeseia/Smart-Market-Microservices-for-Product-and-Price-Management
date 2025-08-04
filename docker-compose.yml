@@ -1,0 +1,125 @@
+version: '3.8'
+
+services:
+  # خدمة الوكيل الذكي
+  agent-intelligent:
+    build: ./agent-intelligent
+    ports:
+      - "8001:8000"
+    environment:
+      - PRIX_SERVICE_URL=http://prix-service:8000
+      - PRODUITS_SERVICE_URL=http://produits-service:8000
+    depends_on:
+      - prix-service
+      - produits-service
+    networks:
+      - microservices-network
+
+  # خدمة الأسعار
+  prix-service:
+    build: ./prix-service
+    ports:
+      - "8002:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@prix-db:5432/prix_db
+    depends_on:
+      - prix-db
+    networks:
+      - microservices-network
+
+  # خدمة المنتجات
+  produits-service:
+    build: ./produits-service
+    ports:
+      - "8003:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@produits-db:5432/produits_db
+    depends_on:
+      - produits-db
+    networks:
+      - microservices-network
+
+  # قاعدة بيانات خدمة الأسعار
+  prix-db:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=prix_db
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - prix_db_data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
+
+  # قاعدة بيانات خدمة المنتجات
+  produits-db:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=produits_db
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - produits_db_data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
+
+  # Redis للتخزين المؤقت
+  redis:
+    image: redis:6-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - microservices-network
+
+  # Vault لإدارة الأسرار
+  vault:
+    image: vault:latest
+    cap_add:
+      - IPC_LOCK
+    environment:
+      - VAULT_DEV_ROOT_TOKEN_ID=myroot
+      - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
+    ports:
+      - "8200:8200"
+    networks:
+      - microservices-network
+
+  # Prometheus للمراقبة
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - microservices-network
+
+  # Grafana لتصور البيانات
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - microservices-network
+
+  # RabbitMQ كوسيط رسائل
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin
+    networks:
+      - microservices-network
+
+volumes:
+  prix_db_data:
+  produits_db_data:
+
+networks:
+  microservices-network:
+    driver: bridge

@@ -1,0 +1,46 @@
+# docker-compose.prod.yml
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - api-gateway
+    restart: always
+
+  api-gateway:
+    build: ./api-gateway
+    environment:
+      - ENV=production
+      - JWT_SECRET=${JWT_SECRET}
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+    restart: always
+    deploy:
+      replicas: 3
+
+  # Services avec réplicas
+  prix-service:
+    build: ./prix-service
+    environment:
+      - ENV=production
+      - DATABASE_URL=${PRIX_DATABASE_URL}
+    restart: always
+    deploy:
+      replicas: 2
+
+  produits-service:
+    build: ./produits-service
+    environment:
+      - ENV=production
+      - DATABASE_URL=${PRODUITS_DATABASE_URL}
+    restart: always
+    deploy:
+      replicas: 2
